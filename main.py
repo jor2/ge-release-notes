@@ -93,7 +93,12 @@ class ReleaseNotesAutomator:
     def push_commit(self):
         repo = self.github_connection.get_repo(self.repo_to_update)
         file = repo.get_contents("README.md")
-        repo.update_file("README.md", "docs: Updating README with latest release notes", self.notes, file.sha)
+        repo.update_file(
+            "README.md",
+            f"docs: start date: {self.get_start_date()} - end date {self.get_end_date()}",
+            self.notes,
+            file.sha
+        )
 
     @staticmethod
     def first_day_of_the_month_datetime():
@@ -112,8 +117,8 @@ class ReleaseNotesAutomator:
 ReleaseNotesAutomator(
     auth_token=os.getenv("GH_TOKEN"),
     repo_to_update="jor2/ge-release-notes",
-    start_date='01-02-2023',
-    end_date='30-03-2023',
+    start_date='27-10-2023',
+    end_date='02-11-2023',
     github_endpoint="github.com",
     org="terraform-ibm-modules"
 )
