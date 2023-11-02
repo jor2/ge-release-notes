@@ -75,15 +75,15 @@ class ReleaseNotesAutomator:
 
     def build_notes(self):
         for release in self.get_relevant_releases():
-            md_body = self.get_markdown_html_body(release)
+            html_body = self.get_html_from_markdown(release.body)
             self.notes += f"| `{release.repo}` " \
                           f"| [{release.tag_name}]({self.release_url(release.repo, release.tag_name)}) " \
-                          f"| {release.created_at.strftime('%d-%m-%Y %H:%M')} | {md_body} |  \n"
+                          f"| {release.created_at.strftime('%d-%m-%Y %H:%M')} | {html_body} |  \n"
 
-    def get_markdown_html_body(self, release):
+    def get_html_from_markdown(self, body):
         md_body = ''
-        if release.body not in [None, '']:
-            md_body = markdown.markdown(self.pre_markdown_body(release.body))
+        if body not in [None, '']:
+            md_body = markdown.markdown(self.pre_markdown_body(body))
             md_body = ' '.join(md_body.split())
         return md_body
 
