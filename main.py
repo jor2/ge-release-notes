@@ -60,7 +60,6 @@ class ReleaseNotesAutomator:
             release
             for release in repo.get_releases()
             if self.get_start_date() <= release.created_at <= self.get_end_date()
-            and release.body not in [None, '']
             and "**deps:**" not in release.body
         ]
 
@@ -76,11 +75,17 @@ class ReleaseNotesAutomator:
 
     def build_notes(self):
         for release in self.get_relevant_releases():
-            md_body = markdown.markdown(self.pre_markdown_body(release.body))
-            md_body = ' '.join(md_body.split())
+            md_body = self.get_markdown_html_body(release)
             self.notes += f"| `{release.repo}` " \
                           f"| [{release.tag_name}]({self.release_url(release.repo, release.tag_name)}) " \
                           f"| {release.created_at.strftime('%d-%m-%Y %H:%M')} | {md_body} |  \n"
+
+    def get_markdown_html_body(self, release):
+        md_body = ''
+        if release.body not in [None, '']:
+            md_body = markdown.markdown(self.pre_markdown_body(release.body))
+            md_body = ' '.join(md_body.split())
+        return md_body
 
     def release_url(self, repo, tag):
         return f"https://{self.github_endpoint}/{self.org}/{repo}/releases/tag/{tag}"
@@ -107,8 +112,8 @@ class ReleaseNotesAutomator:
 ReleaseNotesAutomator(
     auth_token=os.getenv("GH_TOKEN"),
     repo_to_update="jor2/ge-release-notes",
-    start_date='01-09-2023',
-    end_date='30-09-2023',
+    start_date='01-02-2023',
+    end_date='30-03-2023',
     github_endpoint="github.com",
     org="terraform-ibm-modules"
 )
