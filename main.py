@@ -96,7 +96,7 @@ class ReleaseNotesAutomator:
         repo.update_file(
             "README.md",
             f"docs: start date: {self.get_start_date().strftime('%d-%m-%Y')}"
-            f" - end date {self.get_end_date().strftime('%d-%m-%Y')}",
+            f" - end date: {self.get_end_date().strftime('%d-%m-%Y')}",
             self.notes,
             file.sha
         )
