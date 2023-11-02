@@ -78,7 +78,7 @@ class ReleaseNotesAutomator:
             html_body = self.get_html_from_markdown(release.body)
             self.notes += f"| `{release.repo}` " \
                           f"| [{release.tag_name}]({self.release_url(release.repo, release.tag_name)}) " \
-                          f"| {self.fmt_date(release.created_at)} | {html_body} |  \n"
+                          f"| {release.created_at.strftime('%d-%m-%Y %H:%M')} | {html_body} |  \n"
 
     def get_html_from_markdown(self, body):
         md_body = ''
@@ -95,7 +95,8 @@ class ReleaseNotesAutomator:
         file = repo.get_contents("README.md")
         repo.update_file(
             "README.md",
-            f"docs: start date: {self.fmt_date(self.get_start_date())} - end date {self.fmt_date(self.get_end_date())}",
+            f"docs: start date: {self.get_start_date().strftime('%d-%m-%Y')}"
+            f" - end date {self.get_end_date().strftime('%d-%m-%Y')}",
             self.notes,
             file.sha
         )
@@ -112,10 +113,6 @@ class ReleaseNotesAutomator:
     @staticmethod
     def sort_releases_by_date(releases):
         return sorted(releases, key=lambda release: release.created_at, reverse=True)
-
-    @staticmethod
-    def fmt_date(date):
-        return date.strftime('%d-%m-%Y %H:%M')
 
 
 ReleaseNotesAutomator(
