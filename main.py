@@ -7,6 +7,8 @@ from dateutil.tz import tzutc
 from github import Github, Auth
 from dotenv import load_dotenv
 
+from html_template import html
+
 load_dotenv()
 
 
@@ -18,7 +20,8 @@ class ReleaseNotesAutomator:
             start_date,
             end_date,
             github_endpoint,
-            org
+            org,
+            local_run=True
     ):
         self.start_date = start_date
         self.end_date = end_date
@@ -26,6 +29,9 @@ class ReleaseNotesAutomator:
         self.github_endpoint_api = f"https://{self.github_endpoint}/api/v3"
         self.org = org
         self.repo_to_update = repo_to_update
+        self.local_run = local_run
+        if self.local_run:
+            self.html = html
 
         self.notes = "| Module | Version | Release Date | Details |  \n|---|---|---|---|  \n"
 
@@ -74,11 +80,24 @@ class ReleaseNotesAutomator:
         return self.sort_releases_by_date(relevant_releases)
 
     def build_notes(self):
+        print(f"Building release notes for start date: {self.get_start_date().strftime('%d-%m-%Y')} "
+              f"- end date: {self.get_end_date().strftime('%d-%m-%Y')}...")
+        rows = []
         for release in self.get_relevant_releases():
-            html_body = self.get_html_from_markdown(release.body)
-            self.notes += f"| `{release.repo}` " \
-                          f"| [{release.tag_name}]({self.release_url(release.repo, release.tag_name)}) " \
-                          f"| {release.created_at.strftime('%d-%m-%Y %H:%M')} | {html_body} |  \n"
+            html_body = self.get_html_from_markdown(release.body.strip())
+            if self.local_run:
+                rows.append(f"""
+                <tr>
+                  <td><a href="https://{self.github_endpoint}/{self.org}/{release.repo}">{release.repo}</a></td>
+                  <td><a href="{self.release_url(release.repo, release.tag_name)}">{release.tag_name}</a></td>
+                  <td>{release.created_at.strftime('%d-%m-%Y %H:%M')}</td>
+                  <td>{html_body}</td>
+                </tr>""")
+            else:
+                self.notes += f"| `{release.repo}` " \
+                              f"| [{release.tag_name}]({self.release_url(release.repo, release.tag_name)}) " \
+                              f"| {release.created_at.strftime('%d-%m-%Y %H:%M')} | {html_body} |  \n"
+        self.html = self.html.format(content='\n'.join(rows))
 
     def get_html_from_markdown(self, body):
         md_body = ''
@@ -93,13 +112,20 @@ class ReleaseNotesAutomator:
     def push_commit(self):
         repo = self.github_connection.get_repo(self.repo_to_update)
         file = repo.get_contents("README.md")
-        repo.update_file(
-            "README.md",
-            f"docs: start date: {self.get_start_date().strftime('%d-%m-%Y')}"
-            f" - end date: {self.get_end_date().strftime('%d-%m-%Y')}",
-            self.notes,
-            file.sha
-        )
+        if not self.local_run:
+            repo.update_file(
+                "README.md",
+                f"docs: start date: {self.get_start_date().strftime('%d-%m-%Y')}"
+                f" - end date: {self.get_end_date().strftime('%d-%m-%Y')}",
+                self.notes,
+                file.sha
+            )
+            print(f"Pushed commit to https://{self.github_endpoint}/{self.repo_to_update}")
+        else:
+            with open('README.md', 'w') as f:
+                f.write(self.notes)
+            with open('README.html', 'w') as f:
+                f.write(self.html)
 
     @staticmethod
     def first_day_of_the_month_datetime():
@@ -107,8 +133,11 @@ class ReleaseNotesAutomator:
 
     @staticmethod
     def pre_markdown_body(release_body):
-        match = re.search(r'[(]\d{4}-\d{2}-\d{2}.\s*', release_body)
-        return release_body.split(f"{match.group()}")[-1].strip()
+        try:
+            match = re.search(r'[(]\d{4}-\d{2}-\d{2}.\s*', release_body)
+            return release_body.split(match.group())[-1].strip()
+        except AttributeError:
+            return release_body
 
     @staticmethod
     def sort_releases_by_date(releases):
@@ -118,8 +147,8 @@ class ReleaseNotesAutomator:
 ReleaseNotesAutomator(
     auth_token=os.getenv("GH_TOKEN"),
     repo_to_update="jor2/ge-release-notes",
-    start_date='27-10-2023',
-    end_date='02-11-2023',
+    start_date='19-10-2023',
+    end_date='07-11-2023',
     github_endpoint="github.com",
     org="terraform-ibm-modules"
 )
