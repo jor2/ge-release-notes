@@ -26,7 +26,10 @@ class ReleaseNotesAutomator:
         self.start_date = start_date
         self.end_date = end_date
         self.github_endpoint = github_endpoint
-        self.github_endpoint_api = f"https://api.{self.github_endpoint}/api/v3"
+        if "github.com" not in self.github_endpoint:
+            self.github_endpoint_api = f"https://{self.github_endpoint}/api/v3"
+        else:
+            self.github_endpoint_api = f"https://api.{self.github_endpoint}/api/v3"
         self.org = org
         self.repo_to_update = repo_to_update
         self.local_run = local_run
@@ -35,7 +38,7 @@ class ReleaseNotesAutomator:
         self.release_notes_headers = "| Module | Version | Release Date | Details |  \n|---|---|---|---|  \n"
 
         auth = Auth.Token(auth_token)
-        self.github_connection = Github(auth=auth)
+        self.github_connection = Github(base_url=self.github_endpoint_api, auth=auth)
 
         self.markdown_release_notes = self.get_markdown_release_notes()
         self.html_release_notes = self.get_html_release_notes()
